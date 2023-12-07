@@ -2,7 +2,7 @@ import tkinter as tk
 from tkinter import filedialog
 from tkinter import messagebox
 import requests
-from concurrent.futures import ThreadPoolExecutor
+import time
 
 def check_repository(url):
     try:
@@ -44,13 +44,18 @@ def run_check():
     with open(input_file, 'r') as file:
         urls = file.read().splitlines()
 
-    with ThreadPoolExecutor(max_workers=20) as executor:
-        results = executor.map(check_repository, urls)
+    progress_text.config(text="進度：0%")
+    result_text.delete(1.0, tk.END)  # 清空結果顯示區域
 
-    with open(output_file, 'w') as file:
-        for url, repo_type in results:
-            if url:
-                file.write(f"{url} ({repo_type})\n")
+    for i, url in enumerate(urls):
+        result, repo_type = check_repository(url)
+        if result:
+            result_text.insert(tk.END, f"{result} ({repo_type})\n")
+
+        # 更新進度文本
+        progress_value = int((i + 1) / len(urls) * 100)
+        progress_text.config(text=f"進度：{progress_value}%")
+        root.update()  # 更新視窗
 
     messagebox.showinfo("完成", "檢查完成")
 
@@ -65,6 +70,12 @@ tk.Button(root, text="選擇輸入檔案", command=load_file).pack()
 output_entry = tk.Entry(root, width=50)
 output_entry.pack()
 tk.Button(root, text="選擇輸出檔案", command=save_file).pack()
+
+progress_text = tk.Label(root, text="進度：0%")
+progress_text.pack()
+
+result_text = tk.Text(root, width=50, height=10)
+result_text.pack()
 
 tk.Button(root, text="開始檢查", command=run_check).pack()
 
